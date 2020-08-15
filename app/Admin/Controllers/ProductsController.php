@@ -70,7 +70,7 @@ class ProductsController extends AdminController
         // 创建一个输入框，第一个参数 title 是模型的字段名，第二个参数是该字段描述
         $form->text('title', '商品名称')->rules('required');
 
-        $form->select('category_id','商品名称')->options(function($id){
+        $form->select('category_id','类目')->options(function($id){
             $category=Category::find($id);
             if($category){
                 return [$category->id=>$category->full_name];
