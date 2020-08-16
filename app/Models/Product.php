@@ -12,7 +12,7 @@ class Product extends Model
 
     public static $typeMap=[
         self::TYPE_NORMAL=>'普通商品',
-        self::TYPE_CROWFUNDING=>'众筹商品',
+        self::TYPE_CROWDFUNDING=>'众筹商品',
     ];
 
     protected $fillable = [
