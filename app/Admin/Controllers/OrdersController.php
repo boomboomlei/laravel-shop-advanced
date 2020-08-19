@@ -63,6 +63,11 @@ class OrdersController extends AdminController
 
     public function ship(Order $order, Request $request)
     {
+
+        if ($order->type === Order::TYPE_CROWDFUNDING &&
+            $order->items[0]->product->crowdfunding->status !== CrowdfundingProduct::STATUS_SUCCESS) {
+            throw new InvalidRequestException('众筹订单只能在众筹成功之后发货');
+        }
         // 判断当前订单是否已支付
         if (!$order->paid_at) {
             throw new InvalidRequestException('该订单未付款');
