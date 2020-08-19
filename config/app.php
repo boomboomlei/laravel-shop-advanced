@@ -121,6 +121,9 @@ return [
 
     'key' => env('APP_KEY'),
 
+    'ngrok_url' => env('NGROK_URL'),
+
+    
     'cipher' => 'AES-256-CBC',
 
     /*
