@@ -11,9 +11,11 @@ use App\Models\Category;
 
 class ProductsController extends CommonProductsController
 {
-    public function getProductType(){
+    public function getProductType()
+    {
         return Product::TYPE_NORMAL;
     }
+
     protected $title = '商品';
 
   
@@ -31,12 +33,10 @@ class ProductsController extends CommonProductsController
         $grid->review_count('评论数');
     }
 
-    protected function customForm(){}
-    /**
-     * Make a form builder.
-     *
-     * @return Form
-     */
+ 
+    protected function customForm(Form $form){}
+  
+
     // protected function form()
     // {
     //     $form = new Form(new Product);
