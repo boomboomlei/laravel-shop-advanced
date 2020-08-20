@@ -139,7 +139,7 @@ class OrderService
                     'total_fee'=>$order->total_amount*100,
                     'refund_fee' => $order->total_amount * 100,
                     'out_refund_no'=>$refundNo,
-                    'notify_url'=>ngrok_url('payment.wechat.refund_notify');
+                    'notify_url'=>ngrok_url('payment.wechat.refund_notify'),
                 ]);
 
                 $order->update([
