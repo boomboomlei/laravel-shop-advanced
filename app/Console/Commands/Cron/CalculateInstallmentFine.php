@@ -41,7 +41,7 @@ class CalculateInstallmentFine extends Command
      */
     public function handle()
     {
-       InstallmentItem::query();
+       InstallmentItem::query()
        ->with(['installment'])
        ->whereHas('installment',function($query){
             $query->where('status',Installment::STATUS_REPAYING);
@@ -62,7 +62,7 @@ class CalculateInstallmentFine extends Command
 
                 $fine=big_number($fine)->compareTo($base)===1?$base:$fine;
                 $item->update([
-                    'fine'=>$fine;
+                    'fine'=>$fine,
                 ]);
             }
        });
