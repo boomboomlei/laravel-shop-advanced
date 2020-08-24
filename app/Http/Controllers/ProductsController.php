@@ -145,7 +145,73 @@ class ProductsController extends Controller
         }
 
 
+        if($search || isset($category)){
+            $params['body']['aggs']=[
+                'properties'=>[
+                    'nested'=>[
+                        'path'=>'properties',
+                    ],
+                    'aggs'=>[
+                        'properties'=>[
+                            'terms'=>[
+                                'field'=>'properties.name',
+                            ],
+                            'aggs'=>[
+                                'value'=>[
+                                    'terms'=>[
+                                        'field'=>'properties.value',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+
+
+            ];
+        }
+
+        $properties=[];
+       
+
+        $propertyFilters=[];
+        if($filterString=$request->input('filters')){
+            $filterArray=explode('|',$filterString);
+            foreach($filterArray as $filter){
+                list($name,$value)=explode(':',$filter);
+
+                $propertyFilters[$name]=$value;
+                $params['body']['query']['bool']['filter'][]=[
+                    'nested'=>[
+                        'path'=>'properties',
+                        'query'=>[
+                            ['term'=>['properties.name'=>$name]],
+                            ['term'=>['properties.value'=>$value]],
+                        ],
+                    ],
+                ];
+            }
+        }
+
+
+        
+
         $result = app('es')->search($params);
+       
+        if(isset($result['aggregations'])){
+            // dd($result,$result['aggregations']['properties']['properties']['buckets'],collect($result['aggregations']['properties']['properties']['buckets']));
+            $properties=collect($result['aggregations']['properties']['properties']['buckets'])->map(function($bucket){
+                return [
+                    'key'=>$bucket['key'],
+                    'values'=>collect($bucket['value']['buckets'])->pluck('key')->all(),
+                ];
+            })->filter(function($property) use ($propertyFilters){
+                return count($property['values'])>1 && !isset($propertyFilters[$property['key']]);
+            });
+        }
+
+        
+        // dd($params,$result['hits']['hits'],collect($result['hits']['hits'])->pluck('_id')->all());
 
         // 通过 collect 函数将返回结果转为集合，并通过集合的 pluck 方法取到返回的商品 ID 数组
         $productIds = collect($result['hits']['hits'])->pluck('_id')->all();
@@ -155,6 +221,8 @@ class ProductsController extends Controller
             // orderByRaw 可以让我们用原生的 SQL 来给查询结果排序
             ->orderByRaw(sprintf("FIND_IN_SET(id,'%s')",join(',',$productIds)))
             ->get();
+
+            // dd($products);
         // 返回一个 LengthAwarePaginator 对象
         $pager = new LengthAwarePaginator($products, $result['hits']['total']['value'], $perPage, $page, [
             'path' => route('products.index', false), // 手动构建分页的 url
@@ -167,6 +235,8 @@ class ProductsController extends Controller
                 'order'  => $order,
             ],
             'category' => $category??null,
+            'properties'=>$properties,
+            'propertyFilters' => $propertyFilters,
         ]);
     }
 
