@@ -185,8 +185,10 @@ class ProductsController extends Controller
                     'nested'=>[
                         'path'=>'properties',
                         'query'=>[
-                            ['term'=>['properties.name'=>$name]],
-                            ['term'=>['properties.value'=>$value]],
+                            // ['term'=>['properties.name'=>$name]],
+                            // ['term'=>['properties.value'=>$value]],
+                            
+                            ['term' => ['properties.search_value' => $filter]],
                         ],
                     ],
                 ];
