@@ -12,7 +12,8 @@ class SyncProducts extends Command
      *
      * @var string
      */
-    protected $signature = 'es:sync-products';
+    // protected $signature = 'es:sync-products';
+    protected $signature = 'es:sync-products {--index=products}';
 
     /**
      * The console command description.
@@ -51,7 +52,7 @@ class SyncProducts extends Command
                     $data=$product->toESArray();
                     $req['body'][]=[
                         'index'=>[
-                            '_index'=>'products',
+                            '_index'=>$this->option('index'),
                             '_id'=>$data['id'],
                         ],
                     ];
