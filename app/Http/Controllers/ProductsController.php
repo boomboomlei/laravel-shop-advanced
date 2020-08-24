@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use App\Models\Category;
 use App\Services\CategoryService;
 
+use App\SearchBuilders\ProductSearchBuilder;
+use App\Services\ProductService;
+
 
 use Illuminate\Pagination\LengthAwarePaginator;
 class ProductsController extends Controller
@@ -71,7 +74,9 @@ class ProductsController extends Controller
     // }
 
 
-    public function index(Request $request)
+    
+
+    public function index_temp(Request $request)
     {
         $page    = $request->input('page', 1);
         $perPage = 16;
@@ -242,8 +247,118 @@ class ProductsController extends Controller
         ]);
     }
 
-    public function show(Product $product, Request $request)
+
+
+    public function index(Request $request){
+        $page=$request->input('page',1);
+        $perPage=16;
+        $builder=(new ProductSearchBuilder())->onsale()->paginate($perPage,$page);
+
+
+        if($request->input('category_id')&&$category=Category::find($request->input('category_id'))){
+            $builder->category($category);
+        }
+
+        if($search=$request->input('search','')){
+            $keywords=array_filter(explode(' ',$search));
+            $builder->keywords($keywords);
+        }
+
+        if($search || isset($category)){
+            $builder->aggregateProperties();
+        }
+
+        $propertyFilters=[];
+        if($filterString=$request->input('filters')){
+            $filterArray=explode('|',$filterString);
+            foreach($filterArray as $filter){
+                list($name,$value)=explode(':',$filter);
+                $propertyFilter[$name]=$value;
+                $builder->propertyFilter($name,$value);
+            }
+
+
+
+        }
+
+
+        if($order=$request->input('order','')){
+            if (preg_match('/^(.+)_(asc|desc)$/', $order, $m)) {
+                if (in_array($m[1], ['price', 'sold_count', 'rating'])) {
+                    // 调用查询构造器的排序
+                    $builder->orderBy($m[1], $m[2]);
+                }
+            }
+        }
+
+        $result=app('es')->search($builder->getParams());
+
+        if(isset($result['aggregations'])){
+            // dd($result,$result['aggregations']['properties']['properties']['buckets'],collect($result['aggregations']['properties']['properties']['buckets']));
+            $properties=collect($result['aggregations']['properties']['properties']['buckets'])->map(function($bucket){
+                return [
+                    'key'=>$bucket['key'],
+                    'values'=>collect($bucket['value']['buckets'])->pluck('key')->all(),
+                ];
+            })->filter(function($property) use ($propertyFilters){
+                return count($property['values'])>1 && !isset($propertyFilters[$property['key']]);
+            });
+        }
+
+        
+        // dd($params,$result['hits']['hits'],collect($result['hits']['hits'])->pluck('_id')->all());
+
+        // 通过 collect 函数将返回结果转为集合，并通过集合的 pluck 方法取到返回的商品 ID 数组
+        $productIds = collect($result['hits']['hits'])->pluck('_id')->all();
+        // 通过 whereIn 方法从数据库中读取商品数据
+        $products = Product::query()
+           // ->whereIn('id',$productIds)
+           // ->orderByRaw(sprintf("FIND_IN_SET(id,'%s')",join(',',$productIds)))
+            // orderByRaw 可以让我们用原生的 SQL 来给查询结果排序
+            ->byIds($productIds)
+            ->get();
+
+            // dd($products);
+        // 返回一个 LengthAwarePaginator 对象
+        $pager = new LengthAwarePaginator($products, $result['hits']['total']['value'], $perPage, $page, [
+            'path' => route('products.index', false), // 手动构建分页的 url
+        ]);
+
+        return view('products.index', [
+            'products' => $pager,
+            'filters'  => [
+                'search' => $search,
+                'order'  => $order,
+            ],
+            'category' => $category??null,
+            'properties'=>$properties??[],
+            'propertyFilters' => $propertyFilters,
+        ]);
+    }
+
+    public function show(Product $product, Request $request,ProductService $service)
     {
+        // $builder=(new ProductSearchBuilder())->onSale()->paginate(4,1);
+        // foreach($product->properties as $property){
+        //     $builder->propertyFilter($property->name,$property->value,'should');
+        // }
+
+        // $builder->minShouldMatch(ceil(count($product->properties)/2));
+        // $params=$builder->getParams();
+
+        // $params['body']['query']['bool']['must_not']=[['term'=>['id'=>$product->id]]];
+
+        // $result=app('es')->search($params);
+
+        // $similarProductIds=collect($result['hits']['hits'])->pluck('_id')->all();
+
+        $similarProductIds=$service->getSimilarProductIds($product,4);
+
+        $similarProducts=Product::query()
+                // ->whereIn('id',$similarProductIds)
+                // ->orderByRaw(sprintf("FIND_IN_SET(id,'%s')",join(',',$similarProductIds)))
+                ->byIds($similarProductIds)
+                ->get();
         if (!$product->on_sale) {
             throw new InvalidRequestException('商品未上架');
         }
@@ -268,7 +383,8 @@ class ProductsController extends Controller
         return view('products.show', [
             'product' => $product,
             'favored' => $favored,
-            'reviews' => $reviews
+            'reviews' => $reviews,
+            'similar' => $similarProducts,
         ]);
     }
 
