@@ -339,7 +339,7 @@ class ProductsController extends Controller
     public function show(Product $product, Request $request,ProductService $service)
     {
 
-        dd($product->toESArray());
+        // dd($product->toESArray());
         // $builder=(new ProductSearchBuilder())->onSale()->paginate(4,1);
         // foreach($product->properties as $property){
         //     $builder->propertyFilter($property->name,$property->value,'should');
