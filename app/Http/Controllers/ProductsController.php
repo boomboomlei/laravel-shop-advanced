@@ -273,7 +273,7 @@ class ProductsController extends Controller
             $filterArray=explode('|',$filterString);
             foreach($filterArray as $filter){
                 list($name,$value)=explode(':',$filter);
-                $propertyFilter[$name]=$value;
+                $propertyFilters[$name]=$value;
                 $builder->propertyFilter($name,$value);
             }
 
@@ -338,6 +338,8 @@ class ProductsController extends Controller
 
     public function show(Product $product, Request $request,ProductService $service)
     {
+
+        dd($product->toESArray());
         // $builder=(new ProductSearchBuilder())->onSale()->paginate(4,1);
         // foreach($product->properties as $property){
         //     $builder->propertyFilter($property->name,$property->value,'should');
