@@ -1,21 +1,16 @@
 <?php
 
 use Illuminate\Database\Seeder;
-use Carbon\Carbon;
+
 class UsersSeeder extends Seeder
 {
     public function run()
     {
         // 通过 factory 方法生成 100 个用户并保存到数据库中
-       $users=factory(\App\Models\User::class, 100)->create();
+        factory(\App\Models\User::class, 100)->create();
 
-       $emailArr=['lilei@qq.com','leilei@qq.com'];
-
-        foreach ($users as $user) {
-            if(in_array($user->email,$emailArr)){
-                $user->update(['email_verified_at' =>Carbon::now()]);
-            }
+        $lilei=\App\Models\User::query()->where(['id'=>'1'])->get();
+        $lilei->update(['email_verified_at' =>Carbon::now(),'name'=>'lilei','email'=>'lilei@qq.com','password'=>'$10$mJc9G3LblU7jsJvDhr3UbuVwGNZzAPb9b0BJwtmKk9KW38LKUUYLW']);
             
-        }
     }
 }
