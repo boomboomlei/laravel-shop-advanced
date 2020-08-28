@@ -123,6 +123,7 @@ return [
 
     'ngrok_url' => env('NGROK_URL'),
 
+    'seckill_order_ttl' => 600,
     
     'cipher' => 'AES-256-CBC',
 
